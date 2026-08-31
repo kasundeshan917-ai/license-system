@@ -1,10 +1,10 @@
 // ============================================================
 //  LICENSE SYSTEM - FRONTEND
-//  Netlify Deployment
+//  Netlify Deployment - Full Version
 // ============================================================
 
 // API URL - Netlify Functions
-const API_URL = '/.netlify/functions/api';
+const API_URL = window.location.origin + '/.netlify/functions/api';
 
 // ===== DOM REFS =====
 const $ = id => document.getElementById(id);
@@ -16,21 +16,33 @@ const appsSection = $('appsSection');
 const authSection = $('authSection');
 
 // ===== AUTH =====
-function getToken() { return localStorage.getItem('token'); }
+function getToken() { 
+    return localStorage.getItem('token'); 
+}
+
 function setToken(t) { 
     if (t) {
         localStorage.setItem('token', t);
+        console.log('✅ Token saved');
     } else {
         localStorage.removeItem('token');
+        console.log('✅ Token removed');
     }
 }
-function getUserRole() { return localStorage.getItem('userRole') || 'user'; }
-function setUserRole(r) { localStorage.setItem('userRole', r); }
+
+function getUserRole() { 
+    return localStorage.getItem('userRole') || 'user'; 
+}
+
+function setUserRole(r) { 
+    localStorage.setItem('userRole', r); 
+}
 
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const headers = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['x-auth-token'] = token;
+    
     const options = { method, headers };
     if (data) options.body = JSON.stringify(data);
     
@@ -49,11 +61,13 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 function showSection(section) {
     console.log('📍 Showing section:', section);
     
+    // Hide all sections
     if (authSection) authSection.style.display = 'none';
     if (dashboard) dashboard.style.display = 'none';
     if (usersSection) usersSection.style.display = 'none';
     if (appsSection) appsSection.style.display = 'none';
     
+    // Show selected section
     if (section === 'auth') {
         if (authSection) authSection.style.display = 'block';
     } else if (section === 'dashboard') {
@@ -79,6 +93,7 @@ function showDashboard(user) {
     const usernameEl = $('username');
     if (usernameEl) usernameEl.textContent = user.username;
     
+    // Show/hide auth buttons
     const loginBtn = $('loginBtn');
     const registerBtn = $('registerBtn');
     const logoutBtn = $('logoutBtn');
@@ -86,12 +101,14 @@ function showDashboard(user) {
     if (registerBtn) registerBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
     
+    // Admin buttons
     const navUsers = $('navUsers');
     const navApps = $('navApps');
     const isAdmin = user.role === 'admin';
     if (navUsers) navUsers.style.display = isAdmin ? 'inline-block' : 'none';
     if (navApps) navApps.style.display = isAdmin ? 'inline-block' : 'none';
     
+    // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.nav-btn[data-section="dashboard"]`);
     if (activeBtn) activeBtn.classList.add('active');
@@ -155,6 +172,7 @@ async function loadStats() {
             if (activeEl) activeEl.textContent = result.filter(l => l.status === 'active').length;
         }
         
+        // Total users (admin only)
         const { response: uRes, result: uResult } = await apiRequest('/admin/users');
         const usersEl = $('totalUsers');
         if (uRes.ok && usersEl) {
@@ -415,6 +433,8 @@ function initParticles() {
 // ===== INIT =====
 async function checkAuth() {
     console.log('🔍 Checking auth...');
+    console.log('📡 API URL:', API_URL);
+    
     const token = getToken();
     if (!token) {
         console.log('❌ No token found');
@@ -434,12 +454,15 @@ async function checkAuth() {
     }
 }
 
+// Start app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 App starting...');
+    console.log('🌐 API URL:', API_URL);
     initParticles();
     checkAuth();
 });
 
+// Also run immediately if DOM already loaded
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     console.log('🚀 App starting (immediate)...');
     setTimeout(() => {
