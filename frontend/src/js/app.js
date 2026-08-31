@@ -61,11 +61,13 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 function showSection(section) {
     console.log('📍 Showing section:', section);
     
+    // Hide all sections
     if (authSection) authSection.style.display = 'none';
     if (dashboard) dashboard.style.display = 'none';
     if (usersSection) usersSection.style.display = 'none';
     if (appsSection) appsSection.style.display = 'none';
     
+    // Show selected section
     if (section === 'auth') {
         if (authSection) authSection.style.display = 'block';
     } else if (section === 'dashboard') {
@@ -85,21 +87,13 @@ function showSection(section) {
 
 function showDashboard(user) {
     console.log('📊 Showing dashboard for:', user);
-    
-    if (!user || !user.role) {
-        console.error('❌ Invalid user data:', user);
-        alert('Login failed: Invalid user data. Please try again.');
-        setToken(null);
-        showAuth();
-        return;
-    }
-    
     setUserRole(user.role);
     showSection('dashboard');
     
     const usernameEl = $('username');
-    if (usernameEl) usernameEl.textContent = user.username || user.email;
+    if (usernameEl) usernameEl.textContent = user.username;
     
+    // Show/hide auth buttons
     const loginBtn = $('loginBtn');
     const registerBtn = $('registerBtn');
     const logoutBtn = $('logoutBtn');
@@ -107,12 +101,14 @@ function showDashboard(user) {
     if (registerBtn) registerBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
     
+    // Admin buttons
     const navUsers = $('navUsers');
     const navApps = $('navApps');
     const isAdmin = user.role === 'admin';
     if (navUsers) navUsers.style.display = isAdmin ? 'inline-block' : 'none';
     if (navApps) navApps.style.display = isAdmin ? 'inline-block' : 'none';
     
+    // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.nav-btn[data-section="dashboard"]`);
     if (activeBtn) activeBtn.classList.add('active');
@@ -176,6 +172,7 @@ async function loadStats() {
             if (activeEl) activeEl.textContent = result.filter(l => l.status === 'active').length;
         }
         
+        // Total users (admin only)
         const { response: uRes, result: uResult } = await apiRequest('/admin/users');
         const usersEl = $('totalUsers');
         if (uRes.ok && usersEl) {
@@ -228,13 +225,11 @@ if (loginFormEl) {
         console.log('🔑 Logging in:', email);
         
         const { response, result } = await apiRequest('/auth/login', 'POST', { email, password });
-        console.log('📥 Login Response:', result);
-        
-        if (response.ok && result.user) {
+        if (response.ok) {
             setToken(result.token);
             showDashboard(result.user);
         } else {
-            alert(result.message || result.error || 'Login failed. Please check your credentials.');
+            alert(result.message || 'Login failed');
         }
     });
 }
@@ -250,13 +245,11 @@ if (registerFormEl) {
         console.log('📝 Registering:', username, email);
         
         const { response, result } = await apiRequest('/auth/register', 'POST', { username, email, password });
-        console.log('📥 Register Response:', result);
-        
-        if (response.ok && result.user) {
+        if (response.ok) {
             setToken(result.token);
             showDashboard(result.user);
         } else {
-            alert(result.message || result.error || 'Registration failed. Please try again.');
+            alert(result.message || 'Registration failed');
         }
     });
 }
@@ -270,7 +263,7 @@ if (generateBtn) {
         const container = $('newLicenseKey');
         if (!container) return;
         
-        if (response.ok && result.success) {
+        if (response.ok) {
             container.innerHTML = `
                 <div class="license-key-display">
                     <code>${result.license_key}</code>
@@ -281,7 +274,7 @@ if (generateBtn) {
             loadLicenses();
             loadStats();
         } else {
-            alert(result.message || 'Failed to generate license');
+            alert('Failed to generate license');
         }
     });
 }
@@ -291,50 +284,23 @@ const createUserForm = $('createUserForm');
 if (createUserForm) {
     createUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const username = $('newUsername').value.trim();
-        const email = $('newUserEmail').value.trim();
+        const username = $('newUsername').value;
+        const email = $('newUserEmail').value;
         const password = $('newUserPassword').value;
         const role = $('newUserRole').value;
+        console.log('👤 Creating user:', username, role);
         
-        console.log('👤 Creating user:', { username, email, role });
-        
-        if (!username || !email || !password) {
-            alert('Please fill all fields');
-            return;
-        }
-        
+        const { response, result } = await apiRequest('/admin/users', 'POST', { username, email, password, role });
         const msg = $('createUserMessage');
-        if (msg) msg.innerHTML = '<p style="color:var(--text-secondary);">⏳ Creating user...</p>';
+        if (!msg) return;
         
-        try {
-            const { response, result } = await apiRequest('/admin/users', 'POST', { 
-                username, 
-                email, 
-                password, 
-                role 
-            });
-            
-            console.log('📥 Response status:', response.status);
-            console.log('📥 Result:', result);
-            
-            if (!msg) return;
-            
-            if (response.ok) {
-                msg.innerHTML = `<p style="color:var(--accent);">✅ User created successfully!</p>`;
-                createUserForm.reset();
-                await loadAllUsers();
-                await loadStats();
-                setTimeout(() => msg.innerHTML = '', 5000);
-            } else {
-                msg.innerHTML = `<p style="color:var(--danger);">❌ ${result.message || result.error || 'Failed to create user'}</p>`;
-                console.error('Create user error:', result);
-            }
-        } catch (error) {
-            console.error('❌ Create user error:', error);
-            if (msg) {
-                msg.innerHTML = `<p style="color:var(--danger);">❌ Network error: ${error.message}</p>`;
-            }
+        if (response.ok) {
+            msg.innerHTML = `<p style="color:var(--accent);">✅ User created successfully!</p>`;
+            createUserForm.reset();
+            loadAllUsers();
+            loadStats();
+        } else {
+            msg.innerHTML = `<p style="color:var(--danger);">❌ ${result.message || 'Failed'}</p>`;
         }
     });
 }
@@ -405,7 +371,7 @@ if (registerBtn) {
     });
 }
 
-// ===== PARTICLES =====
+// ===== PARTICLES (Simple Version) =====
 function initParticles() {
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
@@ -413,6 +379,7 @@ function initParticles() {
     const ctx = canvas.getContext('2d');
     let w, h;
     const particles = [];
+    const mouse = { x: null, y: null };
     
     function resize() {
         w = canvas.width = window.innerWidth;
@@ -435,12 +402,14 @@ function initParticles() {
     
     function draw() {
         ctx.clearRect(0, 0, w, h);
+        
         for (const p of particles) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
             ctx.fill();
         }
+        
         requestAnimationFrame(draw);
     }
     
@@ -475,7 +444,7 @@ async function checkAuth() {
     
     console.log('✅ Token found, verifying...');
     const { response, result } = await apiRequest('/auth/me');
-    if (response.ok && result.id) {
+    if (response.ok) {
         console.log('✅ User verified:', result);
         showDashboard(result);
     } else {
