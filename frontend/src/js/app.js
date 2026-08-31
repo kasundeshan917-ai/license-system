@@ -1,4 +1,10 @@
-const API_URL = 'http://localhost:5000/api';
+// ============================================================
+//  LICENSE SYSTEM - FRONTEND
+//  Netlify Deployment
+// ============================================================
+
+// API URL - Netlify Functions
+const API_URL = '/.netlify/functions/api';
 
 // ===== DOM REFS =====
 const $ = id => document.getElementById(id);
@@ -14,10 +20,8 @@ function getToken() { return localStorage.getItem('token'); }
 function setToken(t) { 
     if (t) {
         localStorage.setItem('token', t);
-        console.log('✅ Token saved');
     } else {
         localStorage.removeItem('token');
-        console.log('✅ Token removed');
     }
 }
 function getUserRole() { return localStorage.getItem('userRole') || 'user'; }
@@ -45,13 +49,11 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 function showSection(section) {
     console.log('📍 Showing section:', section);
     
-    // Hide all sections
     if (authSection) authSection.style.display = 'none';
     if (dashboard) dashboard.style.display = 'none';
     if (usersSection) usersSection.style.display = 'none';
     if (appsSection) appsSection.style.display = 'none';
     
-    // Show selected section
     if (section === 'auth') {
         if (authSection) authSection.style.display = 'block';
     } else if (section === 'dashboard') {
@@ -77,7 +79,6 @@ function showDashboard(user) {
     const usernameEl = $('username');
     if (usernameEl) usernameEl.textContent = user.username;
     
-    // Show/hide auth buttons
     const loginBtn = $('loginBtn');
     const registerBtn = $('registerBtn');
     const logoutBtn = $('logoutBtn');
@@ -85,14 +86,12 @@ function showDashboard(user) {
     if (registerBtn) registerBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
     
-    // Admin buttons
     const navUsers = $('navUsers');
     const navApps = $('navApps');
     const isAdmin = user.role === 'admin';
     if (navUsers) navUsers.style.display = isAdmin ? 'inline-block' : 'none';
     if (navApps) navApps.style.display = isAdmin ? 'inline-block' : 'none';
     
-    // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.nav-btn[data-section="dashboard"]`);
     if (activeBtn) activeBtn.classList.add('active');
@@ -156,7 +155,6 @@ async function loadStats() {
             if (activeEl) activeEl.textContent = result.filter(l => l.status === 'active').length;
         }
         
-        // Total users (admin only)
         const { response: uRes, result: uResult } = await apiRequest('/admin/users');
         const usersEl = $('totalUsers');
         if (uRes.ok && usersEl) {
@@ -295,7 +293,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         const section = btn.dataset.section;
         console.log('🔘 Nav clicked:', section);
         
-        // Update active state
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
@@ -356,6 +353,65 @@ if (registerBtn) {
     });
 }
 
+// ===== PARTICLES (Simple Version) =====
+function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    let w, h;
+    const particles = [];
+    const mouse = { x: null, y: null };
+    
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    
+    function createParticles() {
+        const count = Math.min(Math.floor((w * h) / 8000), 120);
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                r: Math.random() * 2 + 0.5,
+                dx: (Math.random() - 0.5) * 0.5,
+                dy: (Math.random() - 0.5) * 0.5,
+                opacity: Math.random() * 0.3 + 0.1
+            });
+        }
+    }
+    
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+        
+        for (const p of particles) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.fill();
+        }
+        
+        requestAnimationFrame(draw);
+    }
+    
+    function update() {
+        for (const p of particles) {
+            p.x += p.dx;
+            p.y += p.dy;
+            if (p.x < 0 || p.x > w) p.dx *= -1;
+            if (p.y < 0 || p.y > h) p.dy *= -1;
+        }
+        requestAnimationFrame(update);
+    }
+    
+    window.addEventListener('resize', resize);
+    resize();
+    createParticles();
+    draw();
+    update();
+}
+
 // ===== INIT =====
 async function checkAuth() {
     console.log('🔍 Checking auth...');
@@ -378,14 +434,16 @@ async function checkAuth() {
     }
 }
 
-// Start app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 App starting...');
+    initParticles();
     checkAuth();
 });
 
-// Also run immediately if DOM already loaded
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     console.log('🚀 App starting (immediate)...');
-    checkAuth();
+    setTimeout(() => {
+        initParticles();
+        checkAuth();
+    }, 100);
 }
