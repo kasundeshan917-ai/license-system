@@ -1,0 +1,54 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install dependencies (Backend)
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Install dependencies (Frontend)
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Run tests
+      working-directory: ./backend
+      run: npm test
+
+    - name: Build Docker images
+      run: |
+        docker build -t license-backend ./backend
+        docker build -t license-frontend ./frontend
+
+    - name: Deploy to server
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      run: |
+        echo "$DEPLOY_KEY" > deploy_key
+        chmod 600 deploy_key
+        scp -i deploy_key docker-compose.yml $DEPLOY_USER@$DEPLOY_HOST:/app/
+        scp -i deploy_key -r ./backend $DEPLOY_USER@$DEPLOY_HOST:/app/
+        scp -i deploy_key -r ./frontend $DEPLOY_USER@$DEPLOY_HOST:/app/
+        ssh -i deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd /app && docker-compose down && docker-compose up -d --build"
