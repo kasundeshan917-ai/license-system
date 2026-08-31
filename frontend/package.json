@@ -1,18 +1,26 @@
 {
-  "name": "license-system-frontend",
+  "name": "license-system",
   "version": "1.0.0",
-  "description": "Production License Management UI",
+  "description": "License Management System - Netlify Deployment",
+  "main": "netlify/functions/api.js",
   "scripts": {
-    "build": "npm run build:css && npm run build:js",
-    "build:css": "postcss src/css/style.css -o dist/style.css --minify",
-    "build:js": "terser src/js/*.js -o dist/bundle.js --compress --mangle",
-    "watch": "npm run build && live-server dist"
+    "build": "echo 'Build complete'",
+    "start": "node netlify/functions/api.js",
+    "dev": "nodemon netlify/functions/api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "serverless-http": "^3.2.0",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "postcss-cli": "^10.1.0",
-    "autoprefixer": "^10.4.15",
-    "cssnano": "^6.0.1",
-    "terser": "^5.19.3",
-    "live-server": "^1.2.2"
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

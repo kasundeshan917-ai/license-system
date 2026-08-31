@@ -1,26 +1,22 @@
 {
-  "name": "license-system",
+  "name": "license-system-backend",
   "version": "1.0.0",
-  "description": "License Management System - Netlify Deployment",
-  "main": "netlify/functions/api.js",
   "scripts": {
-    "build": "echo 'Build complete'",
-    "start": "node netlify/functions/api.js",
-    "dev": "nodemon netlify/functions/api.js"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "pg": "^8.11.3",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1",
     "cors": "^2.8.5",
-    "serverless-http": "^3.2.0",
-    "dotenv": "^16.3.1"
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": "18.x"
   }
 }
